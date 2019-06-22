@@ -12,13 +12,15 @@ import org.jsoup.nodes.Element;
 class Scheduler {
     public static void main(String[] args) throws IOException {
         ArrayList<ClassInfo> classesInfo = new ArrayList<>();
+        // have a temp variable to store the info being worked on in
+        ClassInfo tempClassInfo = new ClassInfo();
 
-        // this reads an entire file into one String in one line. Java 8+ AFAIK
+        // this reads an entire file into one String in one line. Java 7+ AFAIK
         String file_content = new String(Files.readAllBytes(Paths.get("./mySAIT_files/bwskfshd.html")));
         // make a Jsoup Document object that has parsed the String as an HTML file
         Document doc = Jsoup.parse(file_content);
         // to keep track if I am on an even table (course info), or an odd table (schedule info)
-        int classIndex = 0;
+        int tableIndex = 0;
 
         // get all elements that have class="datadisplaytable" in their HTML tags
         Elements tables = doc.getElementsByClass("datadisplaytable");
@@ -29,22 +31,53 @@ class Scheduler {
 
         // for each table (of class datadisplaytable) in the schedule HTML
         for (Element el : tables){
+            // if it is an even table
+            if (tableIndex % 2 == 0){
+                // set the temp ClassInfo to a new one
+                tempClassInfo = new ClassInfo();
+            }
             // get the description by getting the text of first element that has class="captiontext" in its tags in this table
             String classDescription = el.getElementsByClass("captiontext").first().text();
             System.out.println(classDescription);
             // pass the entire table too getTableData, which returns a Dictionary:
             // { "HeaderName": ["value under header 1", "value under header 2", ...] }
-            HashMap<String, ArrayList<String>> tableData = getTableData(el, classIndex%2==0);
+            HashMap<String, ArrayList<String>> tableData = getTableData(el, tableIndex%2==0);
             // speicalized function to print the table data
             printTableData(tableData);
-            // for every item in the table
+            // increment the table index
+            tableIndex++;
+            
+            // for each entry in the table
             for (Map.Entry<String, ArrayList<String>> entry : tableData.entrySet()){
-                // TODO: build ClassInfo object
-                // TODO: convert to calender format
-                ClassInfo classInfo = new ClassInfo();
-            } // end for Map.Entry
-            classIndex++;
+                // check the header
+                switch(entry.getKey()){
+                    case "Date Range":
+                        tempClassInfo.dateRanges = entry.getValue();
+                        break;
+                    case "Type":
+                        tempClassInfo.classTypes = entry.getValue();
+                        break;
+                    case "Instructors":
+                        tempClassInfo.setTeachers(entry.getValue());
+                    case "Days":
+                        tempClassInfo.setDays(entry.getValue());
+                        break;
+                }
+            }
+            // if it is an odd element
+            if (tableIndex%2==1){
+                // add ClassInfo to list
+                classesInfo.add(tempClassInfo);
+            }
         } // end for Element
+
+        // for each class 
+        for (ClassInfo classInfo : classesInfo){
+            System.out.println("Range: " + classInfo.dateRanges);
+            System.out.println("Days: " + classInfo.classDays);
+            System.out.println("Teachers: " + classInfo.teachers);
+            System.out.println("Teachers [RAW]: " + classInfo.teachersRaw);
+        }
     } // end main method
 
     /**
