@@ -8,6 +8,7 @@ class ClassInfo {
 
     public ArrayList<DayOfWeek> classDays;
     public ArrayList<String> meetingTimes;
+    public String dateRange;
 
     public ClassInfo(){
         classCode = new String();
