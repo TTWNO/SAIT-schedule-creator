@@ -10,6 +10,8 @@ class ClassInfo {
     // this distinguishes the same class being done at differnet times
     public String classGroup;
     public String teacher;
+    // Mandatory / Campus Education
+    public String level;
     public double creditsDue;
 
     public ArrayList<DayOfWeek> classDays;
@@ -22,8 +24,10 @@ class ClassInfo {
     public ClassInfo(){
         classDescription = new String();
         classCode = new String();
+        classGroup = new String();
         teacher = new String();
         creditsDue = 0.0;
+        level = new String();
 
         classDays = new ArrayList<DayOfWeek>();
         meetingTimes = new ArrayList<String>();
@@ -31,6 +35,10 @@ class ClassInfo {
         classTypes = new ArrayList<String>();
         teachersRaw = new ArrayList<String>();
         teachers = new ArrayList<ArrayList<String>>();
+    }
+
+    public void setTimes(ArrayList<String> times){
+        meetingTimes = times;
     }
 
     public void setDescriptionAndNameAndGroup(String descNameGrp){

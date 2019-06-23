@@ -82,6 +82,7 @@ class Scheduler {
         for (ClassInfo classInfo : classesInfo){
             System.out.println("Range: " + classInfo.dateRanges);
             System.out.println("Days: " + classInfo.classDays);
+            System.out.println("Times: " + classInfo.meetingTimes);
             System.out.println("Teachers: " + classInfo.teachers);
             System.out.println("Teachers [RAW]: " + classInfo.teachersRaw);
             System.out.println("CRN: " + classInfo.classCode);
@@ -141,10 +142,13 @@ class Scheduler {
                         break;
                     case "Instructors":
                         tempClassInfo.setTeachers(entry.getValue());
+                        break;
                     case "Days":
                         tempClassInfo.setDays(entry.getValue());
                         break;
-                    case "":
+                    case "Time":
+                        tempClassInfo.setTimes(entry.getValue());
+                        break;
                 }
             }
             // if it is an odd element
