@@ -6,6 +6,9 @@ import java.time.DayOfWeek;
 class ClassInfo {
     public String classDescription;
     public String classCode;
+    // this is usually something like A, AA, B, H, etc...
+    // this distinguishes the same class being done at differnet times
+    public String classGroup;
     public String teacher;
     public double creditsDue;
 
@@ -28,6 +31,17 @@ class ClassInfo {
         classTypes = new ArrayList<String>();
         teachersRaw = new ArrayList<String>();
         teachers = new ArrayList<ArrayList<String>>();
+    }
+
+    public void setDescriptionAndNameAndGroup(String descNameGrp){
+        String[] descriptionNameGroup = descNameGrp.split(" - ");
+        for (String s : descriptionNameGroup){
+            System.out.println(s);
+        }
+        System.out.println("========");
+        classDescription = descriptionNameGroup[0];
+        classCode = descriptionNameGroup[1];
+        classGroup = descriptionNameGroup[2];
     }
 
     public void setTeachers(ArrayList<String> teachersPerClasses){

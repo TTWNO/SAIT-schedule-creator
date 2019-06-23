@@ -1,19 +1,73 @@
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Scanner;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.io.IOException;
 import org.jsoup.Jsoup;
+import org.jsoup.Connection.Response;
+import org.jsoup.Connection.Method;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.jsoup.nodes.Element;
 
 class Scheduler {
     public static void main(String[] args) throws IOException {
+        // store all class info in an arraylist of info
         ArrayList<ClassInfo> classesInfo = new ArrayList<>();
         // have a temp variable to store the info being worked on in
         ClassInfo tempClassInfo = new ClassInfo();
+
+        /*
+         /* This code can log you into your mysait page.
+         /* Unfotunately, it cannot execute the javascript that the server returns.
+         /* This functionality would require a seperate library... I don't want to do that yet.
+         /* Plus mySAIT is revamping right away, so there's no point.
+        
+        
+        String student_id;
+        String birthdate;
+
+        Scanner input = new Scanner(System.in);
+        System.out.print("Enter student ID: ");
+        student_id = input.nextLine();
+        System.out.print("Enter password: ");
+        birthdate = input.nextLine();
+        try {
+            Response uuid_page = Jsoup.connect("https://mysait.ca/cp/home/displaylogin")
+                                      .userAgent("Mozilla/5.0")
+                                      .execute();
+
+            Document uuid_doc = uuid_page.parse();
+            String uuid = uuid_doc.getElementById("pass").nextElementSibling().nextElementSibling().val();
+
+            Response response = Jsoup.connect("https://mysait.ca/cp/home/login")
+                                     .userAgent("Mozilla/5.0")
+                                     .timeout(10*1000)
+                                     .method(Method.POST)
+                                     .data("user", student_id)
+                                     .data("pass", birthdate)
+                                     .data("uuid", uuid)
+                                     .followRedirects(true)
+                                     .execute();
+            Map<String, String> cookies = response.cookies();
+            Document doc1 = response.parse();
+            //System.out.println(doc1);
+
+            String main_page_url = "https://www.mysait.ca/cp/render.UserLayoutRootNode.uP?uP_tparam=utf&utf=https%3A%2F%2Fwww.mysait.ca%2Fcp%2Fip%2Flogin%3Fsys%3Dsctssb%26url%3Dhttps%3A%2F%2Fbss.mysait.ca%2Fprod%2Ftwbkwbis.P_GenMenu%3Fname%3Dbmenu.P_RegMnu"; 
+            Response main_page = Jsoup.connect(main_page_url)
+                                     .userAgent("Mozzila/5.0")
+                                     .timeout(10*10000)
+                                     .cookies(cookies)
+                                     .followRedirects(true)
+                                     .execute();
+            Document main_page_doc = main_page.parse();
+            System.out.println(main_page_doc);
+
+        } catch (IOException e){
+            System.out.println("Exception: " + e);
+        }*/
 
         // this reads an entire file into one String in one line. Java 7+ AFAIK
         String file_content = new String(Files.readAllBytes(Paths.get("./mySAIT_files/bwskfshd.html")));
@@ -30,6 +84,9 @@ class Scheduler {
             System.out.println("Days: " + classInfo.classDays);
             System.out.println("Teachers: " + classInfo.teachers);
             System.out.println("Teachers [RAW]: " + classInfo.teachersRaw);
+            System.out.println("CRN: " + classInfo.classCode);
+            System.out.println("Class name: " + classInfo.classDescription);
+            System.out.println("Class group: " + classInfo.classGroup);
             System.out.println("------------");
         }
     } // end main method
@@ -48,20 +105,22 @@ class Scheduler {
         ClassInfo tempClassInfo = new ClassInfo();
         // to keep track if I am on an even table (course info), or an odd table (schedule info)
         int tableIndex = 0;
-
+        
         // get all elements that have class="datadisplaytable" in their HTML tags
         Elements tables = mySAITDocument.getElementsByClass("datadisplaytable");
 
         // for each table (of class datadisplaytable) in the schedule HTML
         for (Element el : tables){
+            
             // if it is an even table
             if (tableIndex % 2 == 0){
                 // set the temp ClassInfo to a new one
                 tempClassInfo = new ClassInfo();
+                // set caption text that contains course info
+                String classDescriptionNameAndGroup = el.getElementsByClass("captiontext").first().text();
+                tempClassInfo.setDescriptionAndNameAndGroup(classDescriptionNameAndGroup);
             }
             // get the description by getting the text of first element that has class="captiontext" in its tags in this table
-            String classDescription = el.getElementsByClass("captiontext").first().text();
-            tempClassInfo.classDescription = classDescription;
             // pass the entire table too getTableData, which returns a Dictionary:
             // { "HeaderName": ["value under header 1", "value under header 2", ...] }
             HashMap<String, ArrayList<String>> tableData = getTableData(el, tableIndex%2==0);
@@ -85,6 +144,7 @@ class Scheduler {
                     case "Days":
                         tempClassInfo.setDays(entry.getValue());
                         break;
+                    case "":
                 }
             }
             // if it is an odd element
