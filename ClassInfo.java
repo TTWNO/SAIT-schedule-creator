@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.time.DayOfWeek;
 
 class ClassInfo {
+    public String classDescription;
     public String classCode;
     public String teacher;
     public double creditsDue;
@@ -16,6 +17,7 @@ class ClassInfo {
     public ArrayList<ArrayList<String>> teachers;
 
     public ClassInfo(){
+        classDescription = new String();
         classCode = new String();
         teacher = new String();
         creditsDue = 0.0;
@@ -74,5 +76,10 @@ class ClassInfo {
                     break;
             }
         }
+    }
+
+    // TODO: implement
+    public String toString(){
+        return ""; 
     }
 }

@@ -19,15 +19,38 @@ class Scheduler {
         String file_content = new String(Files.readAllBytes(Paths.get("./mySAIT_files/bwskfshd.html")));
         // make a Jsoup Document object that has parsed the String as an HTML file
         Document doc = Jsoup.parse(file_content);
+        classesInfo = getClassInfoFromDocument(doc);
+        // get the title of the document (probably: Student full schedule or something simmilar)
+        String title = doc.title();
+        System.out.println(title);
+
+        // for each class 
+        for (ClassInfo classInfo : classesInfo){
+            System.out.println("Range: " + classInfo.dateRanges);
+            System.out.println("Days: " + classInfo.classDays);
+            System.out.println("Teachers: " + classInfo.teachers);
+            System.out.println("Teachers [RAW]: " + classInfo.teachersRaw);
+            System.out.println("------------");
+        }
+    } // end main method
+
+
+    /** getClassInfoFromDocument(Document mySAITPage)
+     * This function takes a jsoup Document input, and extracts all the necessary data from it to form a list of ClassInfo objects.
+     *
+     * @param mySAITPage a jsoup Document of the bwskfshd.html SAIT file
+     *
+     * @return A list of ClassInfo objects
+     */
+    public static ArrayList<ClassInfo> getClassInfoFromDocument(Document mySAITDocument){
+        ArrayList<ClassInfo> result = new ArrayList<>();
+        // simple temp class to store data between tables
+        ClassInfo tempClassInfo = new ClassInfo();
         // to keep track if I am on an even table (course info), or an odd table (schedule info)
         int tableIndex = 0;
 
         // get all elements that have class="datadisplaytable" in their HTML tags
-        Elements tables = doc.getElementsByClass("datadisplaytable");
-        // get the title of the document (probably: Student full schedule or something simmilar)
-        String title = doc.title();
-
-        System.out.println(title);
+        Elements tables = mySAITDocument.getElementsByClass("datadisplaytable");
 
         // for each table (of class datadisplaytable) in the schedule HTML
         for (Element el : tables){
@@ -38,12 +61,12 @@ class Scheduler {
             }
             // get the description by getting the text of first element that has class="captiontext" in its tags in this table
             String classDescription = el.getElementsByClass("captiontext").first().text();
-            System.out.println(classDescription);
+            tempClassInfo.classDescription = classDescription;
             // pass the entire table too getTableData, which returns a Dictionary:
             // { "HeaderName": ["value under header 1", "value under header 2", ...] }
             HashMap<String, ArrayList<String>> tableData = getTableData(el, tableIndex%2==0);
             // speicalized function to print the table data
-            printTableData(tableData);
+            //printTableData(tableData);
             // increment the table index
             tableIndex++;
             
@@ -67,18 +90,11 @@ class Scheduler {
             // if it is an odd element
             if (tableIndex%2==1){
                 // add ClassInfo to list
-                classesInfo.add(tempClassInfo);
+                result.add(tempClassInfo);
             }
         } // end for Element
-
-        // for each class 
-        for (ClassInfo classInfo : classesInfo){
-            System.out.println("Range: " + classInfo.dateRanges);
-            System.out.println("Days: " + classInfo.classDays);
-            System.out.println("Teachers: " + classInfo.teachers);
-            System.out.println("Teachers [RAW]: " + classInfo.teachersRaw);
-        }
-    } // end main method
+        return result;
+    }
 
     /**
      * getTableInfo() takes an Element that it assumes is an HTML table, and returns the data in the following format
