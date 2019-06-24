@@ -71,7 +71,7 @@ class Scheduler {
         }*/
 
         // this reads an entire file into one String in one line. Java 7+ AFAIK
-        String file_content = new String(Files.readAllBytes(Paths.get("./mySAIT_files/bwskfshd.html")));
+        String file_content = new String(Files.readAllBytes(Paths.get("bwskfshd.html")));
         // make a Jsoup Document object that has parsed the String as an HTML file
         Document doc = Jsoup.parse(file_content);
         classesInfo = getClassInfoFromDocument(doc);
