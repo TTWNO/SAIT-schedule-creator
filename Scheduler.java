@@ -80,17 +80,10 @@ class Scheduler {
 
         // for each class 
         for (ClassInfo classInfo : classesInfo){
-            System.out.println("Range: " + classInfo.dateRanges);
-            System.out.println("Days: " + classInfo.classDays);
-            System.out.println("Times: " + classInfo.meetingTimes);
-            System.out.println("Class types: " + classInfo.classTypes);
-            System.out.println("Teachers: " + classInfo.teachers);
-            System.out.println("Teachers [RAW]: " + classInfo.teachersRaw);
-            System.out.println("CRN: " + classInfo.classCode);
-            System.out.println("Class name: " + classInfo.classDescription);
-            System.out.println("Class group: " + classInfo.classGroup);
-            System.out.println("------------");
+            System.out.println(classInfo);
         }
+
+
     } // end main method
 
 
@@ -136,13 +129,13 @@ class Scheduler {
                 // check the header
                 switch(entry.getKey()){
                     case "Date Range":
-                        tempClassInfo.dateRanges = entry.getValue();
+                        tempClassInfo.setStartAndEndDates(entry.getValue());
                         break;
                     case "Type":
-                        tempClassInfo.classTypes = entry.getValue();
+                        tempClassInfo.types = entry.getValue();
                         break;
                     case "Instructors":
-                        tempClassInfo.setTeachers(entry.getValue());
+                        tempClassInfo.setTeachers(entry.getValue());?
                         break;
                     case "Days":
                         tempClassInfo.setDays(entry.getValue());
@@ -152,6 +145,34 @@ class Scheduler {
                         break;
                     case "Schedule Type":
                         tempClassInfo.classTypes = entry.getValue();
+                        break;
+                    case "Where":
+                        tempClassInfo.setMeetingLocations(entry.getValue());
+                        break;
+                    case "CRN:":
+                        tempClassInfo.CRN = entry.getValue().get(0);
+                        break;
+                    case "Credits:":
+                        tempClassInfo.setCredits(entry.getValue());
+                        break;
+                    case "Associated Term:":
+                        tempClassInfo.term = entry.getValue().get(0);
+                        break;
+                    case "Assigned Instructor:":
+                        tempClassInfo.setMainInstructors(entry.getValue());
+                        break;
+                    case "Status:":
+                        tempClassInfo.status = entry.getValue().get(0);
+                        break;
+                    case "Level:":
+                        tempClassInfo.level = entry.getValue().get(0);
+                        break;
+                    case "Campus:":
+                        tempClassInfo.campus = entry.getValue().get(0);
+                        break;
+                    case "Grade Mode:":
+                        tempClassInfo.gradeMode = entry.getValue().get(0);
+                        break;
                 }
             }
             // if it is an odd element
