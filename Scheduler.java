@@ -135,7 +135,7 @@ class Scheduler {
                         tempClassInfo.types = entry.getValue();
                         break;
                     case "Instructors":
-                        tempClassInfo.setTeachers(entry.getValue());?
+                        tempClassInfo.setTeachers(entry.getValue());
                         break;
                     case "Days":
                         tempClassInfo.setDays(entry.getValue());
