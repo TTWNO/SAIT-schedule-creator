@@ -1,6 +1,9 @@
 import java.util.Collection;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.TimeZone;
+import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 
 class ClassInfo {
@@ -14,6 +17,10 @@ class ClassInfo {
     public String level;
     public String CRN;
     public String term;
+	public Date startDate;
+	public Date startTimeDate;
+	public Date endTimeDate;
+	public Date endDate;
     public ArrayList<String> mainTeachers;
     public String status;
     public String campus;
@@ -22,6 +29,8 @@ class ClassInfo {
 
     public ArrayList<DayOfWeek> classDays;
     public ArrayList<String> meetingTimes;
+	public ArrayList<Date> startTimes;
+	public ArrayList<Date> endTimes;
     public ArrayList<String> startDates;
     public ArrayList<String> endDates;
     public ArrayList<String> dateRanges;
@@ -46,6 +55,11 @@ class ClassInfo {
         campus = new String();
         gradeMode = new String();
 
+		startDate = new Date();
+		endDate = new Date();
+		startTimeDate = new Date();
+		endTimeDate = new Date();
+
         classDays = new ArrayList<DayOfWeek>();
         meetingTimes = new ArrayList<String>();
         startDates = new ArrayList<String>();
@@ -57,8 +71,13 @@ class ClassInfo {
         meetingBuildings = new ArrayList<String>();
         teachers = new ArrayList<ArrayList<String>>();
         types = new ArrayList<String>();
+		startTimes = new ArrayList<Date>();
+		endTimes = new ArrayList<Date>();
     }
     
+	/**
+	  * Must run this AFTER running setTimes()
+	  */
     public void setStartAndEndDates(ArrayList<String> dateRangesInput){
         for (String dateRange : dateRangesInput){
             dateRanges.add(dateRange);
@@ -66,7 +85,39 @@ class ClassInfo {
             startDates.add(dateParts[0]);
             endDates.add(dateParts[1]);
         }
+		
+
+		// setting startDate, endDate, startTimeDate, and endTimeDate
+		try {
+			startDate = new SimpleDateFormat("dd-MMM-yyyy").parse(startDates.get(0));
+			endDate = new SimpleDateFormat("dd-MMM-yyyy").parse(endDates.get(endDates.size()-1));
+		} catch (Exception e){
+			System.out.println(e);
+		}
     }
+
+	public void setStartAndEndTimes(){
+		for (int i = 0; i < startDates.size(); i++){
+			try {
+				Date startTimeForThisClass = new SimpleDateFormat("dd-MMM-yyyy hh:mm aa").parse(startDates.get(i) + " " + meetingTimes.get(i).split(" - ")[0]);
+				// use start date as we only want to start ime and end time on thefirst day of class
+				Date endTimeForThisClass = new SimpleDateFormat("dd-MMM-yyyy hh:mm aa").parse(startDates.get(i) + " " + meetingTimes.get(i).split(" - ")[1]);
+				startTimes.add(startTimeForThisClass);
+				endTimes.add(endTimeForThisClass);
+			} catch (Exception e){
+				System.err.println("Error setting start and end times. Setting no time, just a day.");
+				System.err.println(e);
+				try {
+					Date startAndEnd = new SimpleDateFormat("dd-MMM-yyy").parse(startDates.get(i)); 
+					startTimes.add(startAndEnd);
+					endTimes.add(startAndEnd);
+					System.out.println("That worked, don't worry :)");
+				} catch (Exception e2){
+					System.err.println("ERROR!!! File will be invalid.");
+				}
+			}
+		}
+	}
 
     public void setMeetingLocations(ArrayList<String> meetingLocations){
         for (String fullLocation : meetingLocations){
@@ -94,8 +145,17 @@ class ClassInfo {
         creditsDue = Double.parseDouble(creditString.get(0));
     }
 
+	/**
+	  * this function must be run BEFORE you run setStartAndEndDates()
+	  */
     public void setTimes(ArrayList<String> times){
         meetingTimes = times;
+		// this is to check that the times ahve already has some input.
+		if (startDates.isEmpty() || endDates.isEmpty()){
+			System.err.println("Must run setDates() first. Continuing on without setting startTimes and endTimes.");
+		} else {
+			setStartAndEndTimes();
+		}
     }
 
     public void setDescriptionAndNameAndGroup(String descNameGrp){
@@ -151,7 +211,6 @@ class ClassInfo {
                 case "F":
                     classDays.add(DayOfWeek.FRIDAY);
                     break;
-                // TODO: may be inacurate
                 case "S":
                     classDays.add(DayOfWeek.SATURDAY);
                     break;
@@ -200,6 +259,7 @@ class ClassInfo {
             result += String.format("\t\t\t\"%s\": \"%s\"%n", "Room", meetingRooms.get(i));
             result += String.format("\t\t\t\"%s\": \"%s\"%n", "Start Date", startDates.get(i));
             result += String.format("\t\t\t\"%s\": \"%s\"%n", "End Date", endDates.get(i));
+			//result += String.format("\t\t\t\"%s\": \"%s\"%n", "", startTime);
             result += String.format("\t\t\t\"%s\": \"%s\"%n", "Type", types.get(i));
             result += String.format("\t\t\t\"%s\": [", "Teachers");
             for (int j = 0; j < teachers.get(i).size(); j++){
@@ -224,4 +284,32 @@ class ClassInfo {
         result += String.format("}");
         return result;
     }
+
+
+	public ArrayList<String> toIcsFiles(){
+		ArrayList<String> resultArray = new ArrayList<>();
+		
+		String special_newline = "\r\n";
+		SimpleDateFormat dateOutput = new SimpleDateFormat("yyyyMMdd'T'kkmmss");
+		for (int i = 0; i < startTimes.size(); i++){
+			String result = "";
+			// headers
+			result += String.format("BEGIN:VCALENDAR%s", special_newline);
+			result += String.format("VERSION:2.0%s", special_newline);
+			result += String.format("PRODID:-//hacksw/handcal//NONSGML v1.0//EN%s", special_newline);
+			result += String.format("BEGIN:VEVENT%s", special_newline);
+			// body of event
+			result += String.format("UID:uid@example.com%s", special_newline);
+			result += String.format("DTSTAMP:%s%s", dateOutput.format(startTimes.get(i)), special_newline);
+			result += String.format("DTSTART:%s%s", dateOutput.format(startTimes.get(i)), special_newline);
+			result += String.format("DTEND:%s%s", dateOutput.format(endTimes.get(i)), special_newline);
+			result += String.format("SUMMARY:%s%s", classDescription + " @ " + meetingBuildings.get(i) + " " + meetingRooms.get(i), special_newline);
+			result += String.format("RRULE:FREQ=WEEKLY;UNTIL=%s%s", dateOutput.format(endTimes.get(endTimes.size()-1)), special_newline);
+			// end of body
+			result += String.format("END:VEVENT%s", special_newline);
+			result += String.format("END:VCALENDAR%s", special_newline);
+			resultArray.add(result);
+		}
+		return resultArray;
+	}
 }

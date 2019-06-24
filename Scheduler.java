@@ -2,6 +2,7 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.io.IOException;
@@ -80,13 +81,16 @@ class Scheduler {
 
         // for each class 
         for (ClassInfo classInfo : classesInfo){
-            System.out.println(classInfo);
+			int file_index = 1;
+			for (String calFile : classInfo.toIcsFiles()){
+				PrintWriter pw = new PrintWriter(classInfo.classCode + "_" + file_index + ".ics");
+            	pw.println(calFile);
+				file_index++;
+			}
         }
-
-
     } // end main method
 
-
+//
     /** getClassInfoFromDocument(Document mySAITPage)
      * This function takes a jsoup Document input, and extracts all the necessary data from it to form a list of ClassInfo objects.
      *
