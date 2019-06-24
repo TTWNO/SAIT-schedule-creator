@@ -84,7 +84,9 @@ class Scheduler {
 			int file_index = 1;
 			for (String calFile : classInfo.toIcsFiles()){
 				PrintWriter pw = new PrintWriter(classInfo.classCode + "_" + file_index + ".ics");
-            	pw.println(calFile);
+				System.out.println(calFile);
+            	pw.print(calFile);
+				pw.close();
 				file_index++;
 			}
         }
