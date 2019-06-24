@@ -18,7 +18,7 @@ class Scheduler {
         // store all class info in an arraylist of info
         ArrayList<ClassInfo> classesInfo = new ArrayList<>();
         // have a temp variable to store the info being worked on in
-        ClassInfo tempClassInfo = new ClassInfo();
+        ClassInfo classInfoTemp = new ClassInfo();
 
         /*
          /* This code can log you into your mysait page.
@@ -103,7 +103,7 @@ class Scheduler {
     public static ArrayList<ClassInfo> getClassInfoFromDocument(Document mySAITDocument){
         ArrayList<ClassInfo> result = new ArrayList<>();
         // simple temp class to store data between tables
-        ClassInfo tempClassInfo = new ClassInfo();
+        ClassInfo classInfoTemp = new ClassInfo();
         // to keep track if I am on an even table (course info), or an odd table (schedule info)
         int tableIndex = 0;
         
@@ -116,10 +116,10 @@ class Scheduler {
             // if it is an even table
             if (tableIndex % 2 == 0){
                 // set the temp ClassInfo to a new one
-                tempClassInfo = new ClassInfo();
+                classInfoTemp = new ClassInfo();
                 // set caption text that contains course info
                 String classDescriptionNameAndGroup = el.getElementsByClass("captiontext").first().text();
-                tempClassInfo.setDescriptionAndNameAndGroup(classDescriptionNameAndGroup);
+                classInfoTemp.setDescriptionAndNameAndGroup(classDescriptionNameAndGroup);
             }
             // get the description by getting the text of first element that has class="captiontext" in its tags in this table
             // pass the entire table too getTableData, which returns a Dictionary:
@@ -135,56 +135,56 @@ class Scheduler {
                 // check the header
                 switch(entry.getKey()){
                     case "Date Range":
-                        tempClassInfo.setStartAndEndDates(entry.getValue());
+                        classInfoTemp.setStartAndEndDates(entry.getValue());
                         break;
                     case "Type":
-                        tempClassInfo.types = entry.getValue();
+                        classInfoTemp.types = entry.getValue();
                         break;
                     case "Instructors":
-                        tempClassInfo.setTeachers(entry.getValue());
+                        classInfoTemp.setTeachers(entry.getValue());
                         break;
                     case "Days":
-                        tempClassInfo.setDays(entry.getValue());
+                        classInfoTemp.setDays(entry.getValue());
                         break;
                     case "Time":
-                        tempClassInfo.setTimes(entry.getValue());
+                        classInfoTemp.setTimes(entry.getValue());
                         break;
                     case "Schedule Type":
-                        tempClassInfo.classTypes = entry.getValue();
+                        classInfoTemp.classTypes = entry.getValue();
                         break;
                     case "Where":
-                        tempClassInfo.setMeetingLocations(entry.getValue());
+                        classInfoTemp.setMeetingLocations(entry.getValue());
                         break;
                     case "CRN:":
-                        tempClassInfo.CRN = entry.getValue().get(0);
+                        classInfoTemp.CRN = entry.getValue().get(0);
                         break;
                     case "Credits:":
-                        tempClassInfo.setCredits(entry.getValue());
+                        classInfoTemp.setCredits(entry.getValue());
                         break;
                     case "Associated Term:":
-                        tempClassInfo.term = entry.getValue().get(0);
+                        classInfoTemp.term = entry.getValue().get(0);
                         break;
                     case "Assigned Instructor:":
-                        tempClassInfo.setMainInstructors(entry.getValue());
+                        classInfoTemp.setMainInstructors(entry.getValue());
                         break;
                     case "Status:":
-                        tempClassInfo.status = entry.getValue().get(0);
+                        classInfoTemp.status = entry.getValue().get(0);
                         break;
                     case "Level:":
-                        tempClassInfo.level = entry.getValue().get(0);
+                        classInfoTemp.level = entry.getValue().get(0);
                         break;
                     case "Campus:":
-                        tempClassInfo.campus = entry.getValue().get(0);
+                        classInfoTemp.campus = entry.getValue().get(0);
                         break;
                     case "Grade Mode:":
-                        tempClassInfo.gradeMode = entry.getValue().get(0);
+                        classInfoTemp.gradeMode = entry.getValue().get(0);
                         break;
                 }
             }
             // if it is an odd element
             if (tableIndex%2==1){
                 // add ClassInfo to list
-                result.add(tempClassInfo);
+                result.add(classInfoTemp);
             }
         } // end for Element
         return result;
