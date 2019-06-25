@@ -15,6 +15,10 @@ import org.jsoup.nodes.Element;
 
 class Scheduler {
     public static void main(String[] args) throws IOException {
+        
+        Scanner keyboardInput = new Scanner(System.in);
+        String file_content = "";
+
         // store all class info in an arraylist of info
         ArrayList<ClassInfo> classesInfo = new ArrayList<>();
         // have a temp variable to store the info being worked on in
@@ -55,36 +59,73 @@ class Scheduler {
             Document doc1 = response.parse();
             //System.out.println(doc1);
 
-			Response r2 = Jsoup.connect("https://www.mysait.ca/cp/home/next")
-							   .userAgent("Mozilla/5.0")
-							   .timeout(10*10000)
-							   .method(Method.GET)
-							   .followRedirects(true)
-							   .cookies(cookies)
-							   .execute();
-			Document doc2 = r2.parse();
+			//Response r2 = Jsoup.connect("https://www.mysait.ca/cp/home/next")
+			//				   .userAgent("Mozilla/5.0")
+			//				   .timeout(10*10000)
+			//				   .method(Method.GET)
+			//				   .followRedirects(true)
+			//				   .cookies(cookies)
+			//				   .execute();
+			//Document doc2 = r2.parse();
 			//System.out.println(doc2);
-
+                
 			//https://www.mysait.ca/cp/render.UserLayoutRootNode.uP?uP_tparam=utf&utf=https%3A%2F%2Fwww.mysait.ca%2Fcp%2Fip%2Flogin%3Fsys%3Dsctssb%26url%3Dhttps%3A%2F%2Fbss.mysait.ca%2Fprod%2Ftwbkwbis.P_GenMenu%3Fname%3Dbmenu.P_RegMnu
-			Response r3 = Jsoup.connect("https://www.mysait.ca/cp/render.UserLayoutRootNode.uP")
-							   .method(Method.GET)
-							   .cookies(cookies)
+			//https://www.mysait.ca/cp/ip/login?sys=sctssb&url=https%3A%2F%2Fbss.mysait.ca%2Fprod%2Ftwbkwbis.P_GenMenu%3Fname%3Dbmenu.P_RegMnu
+            //https://bss.mysait.ca/prod/bwskfshd.P_CrseSchdDetl
+            //https://bss.mysait.ca/prod/bwskfshd.P_CrseSchdDetl
+            //https://bss.mysait.ca/prod/twbkwbis.P_GenMenu?name=bmenu.P_RegMnu
+            //https://bss.mysait.ca/prod/bwskflib.P_SelDefTerm
+			Response r3 = Jsoup.connect("https://www.mysait.ca/cp/ip/login?sys=sctssb&url=https%3A%2F%2Fbss.mysait.ca%2Fprod%2Fbwskfshd.P_CrseSchdDetl")
+                               .userAgent("Mozilla/5.0")
+                               .followRedirects(true)
 							   .timeout(10*10000)
-							   .followRedirects(true)
-							   .data("uP_tparam", "utf")
-							   .data("utf", "https://www.mysait.ca/cp/ip/login?sys=sctssb&url=https://bbs.mysait.ca/prod/twbkwbis.P_GenMenu?nane=bmenu.P_RegMnu")
+							   .cookies(cookies)
 							   .execute();
 			Document d3 = r3.parse();
-			System.out.println(d3);
+            //System.out.println(d3);
+            Elements termOptions = d3.getElementById("term_id").getElementsByTag("option");
+            // update cookies
+            cookies.putAll(r3.cookies());
+            for (int i = termOptions.size()-1; i >= 0; i--){
+                System.out.printf("%d) %s%n", i+1, termOptions.get(i).text());
+            }
+            System.out.printf("Pick a term (%d-%d): ", 1, termOptions.size());
+            int termId = keyboardInput.nextInt();
+            String termIdToPost = termOptions.get(termId-1).val();
+            //System.out.println(termIdToPost);
 
-			System.exit(0);
+            Response r4 = Jsoup.connect("https://bss.mysait.ca/prod/bwskfshd.P_CrseSchdDetl")
+                               .userAgent("Mozilla/5.0")
+                               .followRedirects(true)
+                               .timeout(10*1000)
+                               .cookies(cookies)
+                               .method(Method.POST)
+                               .data("term_in", termIdToPost)
+                               .execute();
+            Document d4 = r4.parse();
+            cookies.putAll(r4.cookies());
+            // print
+			//System.out.println(d4);
+
+            //Response r5 = Jsoup.connect("https://www.mysait.ca/cp/ip/login?sys=scrss&url=https%3A%2F%2Fbss.mysait.ca%2Fprod%2Fbwskfshd.P_CrseSchdDetl")
+            //                   .userAgent("Mozilla/5.0")
+            //                   .followRedirects(true)
+            //                   .timeout(10*1000)
+            //                   .cookies(cookies)
+            //                   .execute();
+            //Document d5 = r5.parse();
+            //System.out.println(d5);
+            file_content = d4.toString();
         } catch (IOException e){
             System.out.println("Exception: " + e);
 			System.exit(1);
         }
 
         // this reads an entire file into one String in one line. Java 7+ AFAIK
-        String file_content = new String(Files.readAllBytes(Paths.get("bwskfshd.html")));
+        if (file_content.equals("")){
+            System.err.println("This program has failed. Somethin didn't work.");
+            System.exit(0);
+        }
         // make a Jsoup Document object that has parsed the String as an HTML file
         Document doc = Jsoup.parse(file_content);
         classesInfo = getClassInfoFromDocument(doc);
