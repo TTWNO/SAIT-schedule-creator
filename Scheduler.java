@@ -1,7 +1,9 @@
 import java.util.Map;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
+import javax.swing.JOptionPane;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -14,38 +16,160 @@ import org.jsoup.select.Elements;
 import org.jsoup.nodes.Element;
 
 class Scheduler {
-    public static void main(String[] args) throws IOException {
-        
-        Scanner keyboardInput = new Scanner(System.in);
-        String file_content = "";
 
+    public static PrintWriter logFile;
+
+    public static void main(String[] args) throws IOException {
+        // This is the pre-program warning.
+        int decision = JOptionPane.showConfirmDialog(null,
+                     "THIS IS NOT AUTHORIZED BY SAIT. I HAVE NO RESPONSIBLITY FOR ANY CONSQUENSES. Do you wish to continue?", "WARNING!",
+                     JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            
+        // if the user pressed no
+        if (decision == 1){
+            System.exit(0);
+        }
+        // if user emtered "No, thanks.
+        String file_content = "";
+        logFile = new PrintWriter("log.txt");
         // store all class info in an arraylist of info
         ArrayList<ClassInfo> classesInfo = new ArrayList<>();
         // have a temp variable to store the info being worked on in
         ClassInfo classInfoTemp = new ClassInfo();
 
-         /* This code can log you into your mysait page.
-         /* Unfotunately, it cannot execute the javascript that the server returns.
-         /* This functionality would require a seperate library... I don't want to do that yet.
-         /* Plus mySAIT is revamping right away, so there's no point.
-       */ 
-        
         String student_id;
         String birthdate;
 
-        Scanner input = new Scanner(System.in);
-        System.out.print("Enter student ID: ");
-        student_id = input.nextLine();
-        System.out.print("Enter password: ");
-        birthdate = input.nextLine();
-        try {
-            Response uuid_page = Jsoup.connect("https://mysait.ca/cp/home/displaylogin")
-                                      .userAgent("Mozilla/5.0")
-                                      .execute();
+        //System.out.print("Enter student ID: ");
+        //student_id = input.nextLine();
+        student_id = JOptionPane.showInputDialog("Please enter your SAIT student ID: ");
+        //System.out.print("Enter password: ");
+        //birthdate = input.nextLine();
+        birthdate = JOptionPane.showInputDialog("Please enter your birthdate (or mySAIT password if it differs): ");
+        // get UUID from main login page
+        String uuid = getLoginUID();
+        // get login cookies by using student ID, passowrd, and uuid
+        Map<String, String> cookies = getLoginCookies(uuid, student_id, birthdate);
+        // get new cookies, and all possible terms in the form of <Option> Elements
+        Map.Entry<Map<String, String>, Elements> cookies_and_term_options =  getTermPossibilities(cookies);
+        // update cookies
+        cookies.putAll(cookies_and_term_options.getKey());
+        // the Elements are options for terms
+        Elements termOptions = cookies_and_term_options.getValue();
 
-            Document uuid_doc = uuid_page.parse();
-            String uuid = uuid_doc.getElementById("pass").nextElementSibling().nextElementSibling().val();
+        // for each one in reverse order
+        ArrayList<String> optionStrings = new ArrayList<>();
+        for (int i = termOptions.size()-1; i >= 0; i--){
+            //logFile.printf("%d) %s%n", i+1, termOptions.get(i).text());
+            optionStrings.add(termOptions.get(i).text());
+        }
+        //logFile.printf("Pick a term (%d-%d): ", 1, termOptions.size());
+        //int termId = keyboardInput.nextInt();
+        Object termObj = JOptionPane.showInputDialog(null,
+                "Please choose your term:", "Input",
+                JOptionPane.INFORMATION_MESSAGE, null,
+                optionStrings.toArray(), optionStrings.get(optionStrings.size()-1));
+        logFile.println(termObj);
+        int termId = 0;
+        for (int i = 0; i < termOptions.size(); i++){
+            if (termObj.equals(termOptions.get(i).text())){
+                termId = i;
+                break;
+            }
+        }
 
+        // this will be something like 201920 (Fall 2019)
+        String termIdToPost = termOptions.get(termId).val();
+        // finally, get the schedule of the student, with the cookies, and the termId
+        Document d4 = get_student_schedule(cookies, termIdToPost);
+        
+        file_content = d4.toString();
+        // make a Jsoup Document object that has parsed the String as an HTML file
+        Document doc = Jsoup.parse(file_content);
+        classesInfo = getClassInfoFromDocument(doc);
+        // get the title of the document (probably: Student full schedule or something simmilar)
+        //String title = doc.title();
+        //logFile.println(title);
+
+        // for each class 
+        for (ClassInfo classInfo : classesInfo){
+			int file_index = 1;
+			for (String calFile : classInfo.toIcsFiles()){
+				PrintWriter pw = new PrintWriter(classInfo.classCode + "_" + file_index + ".ics");
+				//logFile.println(calFile);
+            	pw.print(calFile);
+				pw.close();
+				file_index++;
+			}
+        }
+        JOptionPane.showMessageDialog(null, "Ran sucsessfully!", "alert", JOptionPane.INFORMATION_MESSAGE);
+    } // end main method
+
+    /** Document get_student_schedule(Map<String, String> cookies, String term_id)
+     * this function returns the schedule of the student.
+     * If all other functions have run succsessfully, this should work too.
+     */
+    public static Document get_student_schedule(Map<String, String> cookies, String term_id){
+            try {
+                Response r4 = Jsoup.connect("https://bss.mysait.ca/prod/bwskfshd.P_CrseSchdDetl")
+                                   .userAgent("Mozilla/5.0")
+                                   .followRedirects(true)
+                                   .timeout(10*1000)
+                                   .cookies(cookies)
+                                   .method(Method.POST)
+                                   // WATCH OUT! It IS "term_in", NOT "term_id"
+                                   .data("term_in", term_id)
+                                   .execute();
+                Document d4 = r4.parse();
+                return d4;
+            }catch (Exception e){
+                logFile.println("There was an error getting the schedule.");
+                logFile.println("Exiting.");
+                logFile.println(e);
+                JOptionPane.showMessageDialog(null, "Error getting student schedule", "alert", JOptionPane.ERROR_MESSAGE);
+                System.exit(1);
+                Document compiler_pleaser = new Document("");
+                return compiler_pleaser;
+            }
+    }
+
+    /** Map.Entry<Map<String, String>, Elements> getTermPossibilities(Map<String, String> cookies)
+     * this function grabs the options for the terms (e.g. Fall 2019, Winter 2019, Appretice 2020, etc..)
+     * It also returns cookies that can be used on the next page in the firs entry on the map
+     */
+    public static Map.Entry<Map<String, String>, Elements> getTermPossibilities(Map<String, String> cookies){
+        try{
+			Response r3 = Jsoup.connect("https://www.mysait.ca/cp/ip/login?sys=sctssb&url=https%3A%2F%2Fbss.mysait.ca%2Fprod%2Fbwskfshd.P_CrseSchdDetl")
+                               .userAgent("Mozilla/5.0")
+                               .followRedirects(true)
+							   .timeout(10*10000)
+							   .cookies(cookies)
+							   .execute();
+			Document d3 = r3.parse();
+            //logFile.println(d3);
+            Elements termOptions = d3.getElementById("term_id").getElementsByTag("option");
+            AbstractMap.Entry<Map<String, String>, Elements> result = new AbstractMap.SimpleEntry<Map<String, String>, Elements>(r3.cookies(), termOptions);
+            return result;
+        }catch(Exception e){
+            logFile.println("Error getting term options. Shutting down");
+            logFile.println(e);
+            logFile.close();
+            JOptionPane.showMessageDialog(null, "Error getting term options.", "alert", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+            // this is all to keep the compiler from yellow at me. :(
+            // Compiler is mean, please help me get out of this abusive relationship.
+            Map<String, String> re_cookies = new HashMap<String, String>();
+            Elements re_elemts = new Elements();
+            AbstractMap.Entry<Map<String, String>, Elements> result = new AbstractMap.SimpleEntry<Map<String, String>, Elements>(re_cookies, re_elemts);
+            return result;
+        }
+    }
+
+    /** Map<String, String> getLoginCookies(String uuid, String student_id, String birthdate)
+     * This function takes the uuid (unique for each login), the student's username (000XXXXXX), and their birthday (or whatever their SAIT password is
+     */
+    public static Map<String, String> getLoginCookies(String uuid, String student_id, String birthdate){
+        try{
             Response response = Jsoup.connect("https://mysait.ca/cp/home/login")
                                      .userAgent("Mozilla/5.0")
                                      .timeout(10*1000)
@@ -56,97 +180,39 @@ class Scheduler {
                                      .followRedirects(true)
                                      .execute();
             Map<String, String> cookies = response.cookies();
-            Document doc1 = response.parse();
-            //System.out.println(doc1);
-
-			//Response r2 = Jsoup.connect("https://www.mysait.ca/cp/home/next")
-			//				   .userAgent("Mozilla/5.0")
-			//				   .timeout(10*10000)
-			//				   .method(Method.GET)
-			//				   .followRedirects(true)
-			//				   .cookies(cookies)
-			//				   .execute();
-			//Document doc2 = r2.parse();
-			//System.out.println(doc2);
-                
-			//https://www.mysait.ca/cp/render.UserLayoutRootNode.uP?uP_tparam=utf&utf=https%3A%2F%2Fwww.mysait.ca%2Fcp%2Fip%2Flogin%3Fsys%3Dsctssb%26url%3Dhttps%3A%2F%2Fbss.mysait.ca%2Fprod%2Ftwbkwbis.P_GenMenu%3Fname%3Dbmenu.P_RegMnu
-			//https://www.mysait.ca/cp/ip/login?sys=sctssb&url=https%3A%2F%2Fbss.mysait.ca%2Fprod%2Ftwbkwbis.P_GenMenu%3Fname%3Dbmenu.P_RegMnu
-            //https://bss.mysait.ca/prod/bwskfshd.P_CrseSchdDetl
-            //https://bss.mysait.ca/prod/bwskfshd.P_CrseSchdDetl
-            //https://bss.mysait.ca/prod/twbkwbis.P_GenMenu?name=bmenu.P_RegMnu
-            //https://bss.mysait.ca/prod/bwskflib.P_SelDefTerm
-			Response r3 = Jsoup.connect("https://www.mysait.ca/cp/ip/login?sys=sctssb&url=https%3A%2F%2Fbss.mysait.ca%2Fprod%2Fbwskfshd.P_CrseSchdDetl")
-                               .userAgent("Mozilla/5.0")
-                               .followRedirects(true)
-							   .timeout(10*10000)
-							   .cookies(cookies)
-							   .execute();
-			Document d3 = r3.parse();
-            //System.out.println(d3);
-            Elements termOptions = d3.getElementById("term_id").getElementsByTag("option");
-            // update cookies
-            cookies.putAll(r3.cookies());
-            for (int i = termOptions.size()-1; i >= 0; i--){
-                System.out.printf("%d) %s%n", i+1, termOptions.get(i).text());
-            }
-            System.out.printf("Pick a term (%d-%d): ", 1, termOptions.size());
-            int termId = keyboardInput.nextInt();
-            String termIdToPost = termOptions.get(termId-1).val();
-            //System.out.println(termIdToPost);
-
-            Response r4 = Jsoup.connect("https://bss.mysait.ca/prod/bwskfshd.P_CrseSchdDetl")
-                               .userAgent("Mozilla/5.0")
-                               .followRedirects(true)
-                               .timeout(10*1000)
-                               .cookies(cookies)
-                               .method(Method.POST)
-                               .data("term_in", termIdToPost)
-                               .execute();
-            Document d4 = r4.parse();
-            cookies.putAll(r4.cookies());
-            // print
-			//System.out.println(d4);
-
-            //Response r5 = Jsoup.connect("https://www.mysait.ca/cp/ip/login?sys=scrss&url=https%3A%2F%2Fbss.mysait.ca%2Fprod%2Fbwskfshd.P_CrseSchdDetl")
-            //                   .userAgent("Mozilla/5.0")
-            //                   .followRedirects(true)
-            //                   .timeout(10*1000)
-            //                   .cookies(cookies)
-            //                   .execute();
-            //Document d5 = r5.parse();
-            //System.out.println(d5);
-            file_content = d4.toString();
-        } catch (IOException e){
-            System.out.println("Exception: " + e);
-			System.exit(1);
+            return cookies;
+        } catch (Exception e){
+            logFile.println("Error getting cookies. Shutting down");
+            logFile.println(e);
+            logFile.close();
+            JOptionPane.showMessageDialog(null, "Error logging in.", "alert", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+            Map<String, String> fake_result = new HashMap<String, String>();
+            return fake_result;
         }
+    }
 
-        // this reads an entire file into one String in one line. Java 7+ AFAIK
-        if (file_content.equals("")){
-            System.err.println("This program has failed. Somethin didn't work.");
-            System.exit(0);
+    /** String getLoginUID()
+     * This function returns the UUID of the login, as a unique token.
+     */
+    public static String getLoginUID(){
+        try{
+            Response uuid_page = Jsoup.connect("https://mysait.ca/cp/home/displaylogin")
+                                      .userAgent("Mozilla/5.0")
+                                      .execute();
+            Document uuid_doc = uuid_page.parse();
+            String uuid = uuid_doc.getElementById("pass").nextElementSibling().nextElementSibling().val();
+            return uuid;
+        } catch (Exception e){
+            logFile.println("There was an error getting the login id.");
+            logFile.println(e);
+            JOptionPane.showMessageDialog(null, "Error getting login UID.", "alert", JOptionPane.ERROR_MESSAGE);
+            logFile.close();
+            System.exit(1);
+            return ""; // to stop compiler form complaining
         }
-        // make a Jsoup Document object that has parsed the String as an HTML file
-        Document doc = Jsoup.parse(file_content);
-        classesInfo = getClassInfoFromDocument(doc);
-        // get the title of the document (probably: Student full schedule or something simmilar)
-        String title = doc.title();
-        System.out.println(title);
+    }
 
-        // for each class 
-        for (ClassInfo classInfo : classesInfo){
-			int file_index = 1;
-			for (String calFile : classInfo.toIcsFiles()){
-				PrintWriter pw = new PrintWriter(classInfo.classCode + "_" + file_index + ".ics");
-				System.out.println(calFile);
-            	pw.print(calFile);
-				pw.close();
-				file_index++;
-			}
-        }
-    } // end main method
-
-//
     /** getClassInfoFromDocument(Document mySAITPage)
      * This function takes a jsoup Document input, and extracts all the necessary data from it to form a list of ClassInfo objects.
      *
@@ -268,7 +334,7 @@ class Scheduler {
 
             // for each ddheader in the table
             for (Element header : tempHeaders){
-                //System.out.println("th: " + header.text());
+                //logFile.println("th: " + header.text());
                 // add header text to headers list
                 headers.add(header.text());
             }
@@ -279,7 +345,7 @@ class Scheduler {
             Elements elementDataPoints = row.getElementsByTag("td");
             // for all <td> tags
             for (Element elementDataPoint : elementDataPoints){
-                //System.out.println("td: " + elementDataPoint.text());
+                //logFile.println("td: " + elementDataPoint.text());
                 // add to temporary list
                 tempDataPoints.add(elementDataPoint.text());
             }
@@ -301,12 +367,12 @@ class Scheduler {
             // B) if it is a course schedule table (multi)
             // multi refers to having multiple data points associated with one header
             ArrayList<String> iDataPoints = new ArrayList<>();
-            //System.out.println("Header: " + headers.get(i));
+            //logFile.println("Header: " + headers.get(i));
             // if this has multiple data points associated with the header
             if (multi){
                 // for each datapoint that matches the header
                 for (int j = 0; j < dataPoints.get(i).size(); j++){
-                    //System.out.println("Data: " + dataPoints.get(i));
+                    //logFile.println("Data: " + dataPoints.get(i));
                     // add it to the temp datapoints
                     iDataPoints.add(dataPoints.get(i).get(j));
                 } 
@@ -329,14 +395,14 @@ class Scheduler {
         // for each value in the dictionary (HashMap)
         for (Map.Entry<String, ArrayList<String>> me : table.entrySet()){
             // print the key
-            System.out.printf("%s: ", me.getKey());
+            logFile.printf("%s: ", me.getKey());
             // for each value
             for (String val : me.getValue()){
                 // print the value
-                System.out.printf("%s, ", val);
+                logFile.printf("%s, ", val);
             }
-            System.out.printf("%n");
+            logFile.printf("%n");
         }
-        System.out.println("---------------------------------");
+        logFile.println("---------------------------------");
     }
 }
