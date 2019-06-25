@@ -1,0 +1,2 @@
+Class-Path: jsoup-1.12.1.jar
+Main-Class: Scheduler
