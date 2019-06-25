@@ -20,12 +20,11 @@ class Scheduler {
         // have a temp variable to store the info being worked on in
         ClassInfo classInfoTemp = new ClassInfo();
 
-        /*
          /* This code can log you into your mysait page.
          /* Unfotunately, it cannot execute the javascript that the server returns.
          /* This functionality would require a seperate library... I don't want to do that yet.
          /* Plus mySAIT is revamping right away, so there's no point.
-        
+       */ 
         
         String student_id;
         String birthdate;
@@ -56,19 +55,33 @@ class Scheduler {
             Document doc1 = response.parse();
             //System.out.println(doc1);
 
-            String main_page_url = "https://www.mysait.ca/cp/render.UserLayoutRootNode.uP?uP_tparam=utf&utf=https%3A%2F%2Fwww.mysait.ca%2Fcp%2Fip%2Flogin%3Fsys%3Dsctssb%26url%3Dhttps%3A%2F%2Fbss.mysait.ca%2Fprod%2Ftwbkwbis.P_GenMenu%3Fname%3Dbmenu.P_RegMnu"; 
-            Response main_page = Jsoup.connect(main_page_url)
-                                     .userAgent("Mozzila/5.0")
-                                     .timeout(10*10000)
-                                     .cookies(cookies)
-                                     .followRedirects(true)
-                                     .execute();
-            Document main_page_doc = main_page.parse();
-            System.out.println(main_page_doc);
+			Response r2 = Jsoup.connect("https://www.mysait.ca/cp/home/next")
+							   .userAgent("Mozilla/5.0")
+							   .timeout(10*10000)
+							   .method(Method.GET)
+							   .followRedirects(true)
+							   .cookies(cookies)
+							   .execute();
+			Document doc2 = r2.parse();
+			//System.out.println(doc2);
 
+			//https://www.mysait.ca/cp/render.UserLayoutRootNode.uP?uP_tparam=utf&utf=https%3A%2F%2Fwww.mysait.ca%2Fcp%2Fip%2Flogin%3Fsys%3Dsctssb%26url%3Dhttps%3A%2F%2Fbss.mysait.ca%2Fprod%2Ftwbkwbis.P_GenMenu%3Fname%3Dbmenu.P_RegMnu
+			Response r3 = Jsoup.connect("https://www.mysait.ca/cp/render.UserLayoutRootNode.uP")
+							   .method(Method.GET)
+							   .cookies(cookies)
+							   .timeout(10*10000)
+							   .followRedirects(true)
+							   .data("uP_tparam", "utf")
+							   .data("utf", "https://www.mysait.ca/cp/ip/login?sys=sctssb&url=https://bbs.mysait.ca/prod/twbkwbis.P_GenMenu?nane=bmenu.P_RegMnu")
+							   .execute();
+			Document d3 = r3.parse();
+			System.out.println(d3);
+
+			System.exit(0);
         } catch (IOException e){
             System.out.println("Exception: " + e);
-        }*/
+			System.exit(1);
+        }
 
         // this reads an entire file into one String in one line. Java 7+ AFAIK
         String file_content = new String(Files.readAllBytes(Paths.get("bwskfshd.html")));
