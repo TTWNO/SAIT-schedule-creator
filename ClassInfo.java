@@ -1,3 +1,5 @@
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.Collection;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -86,7 +88,8 @@ class ClassInfo {
             endDates.add(dateParts[1]);
         }
 		
-
+		ArrayList<Date> realStartDates = getRealStartDates();
+		
 		// setting startDate, endDate, startTimeDate, and endTimeDate
 		try {
 			startDate = new SimpleDateFormat("dd-MMM-yyyy").parse(startDates.get(0));
@@ -95,6 +98,25 @@ class ClassInfo {
 			System.out.println(e);
 		}
     }
+
+	public ArrayList<Date> getRealStartDates(){
+		ArrayList<Date> realReturningDates = new ArrayList<>();
+		for (int i = 0; i < startDates.size(); i++){
+			Calendar realStartDate = new GregorianCalendar();
+			realStartDate.setTime(startTimes.get(i));
+			for (int j = 0; j < 7; j++){
+				realStartDate.add(Calendar.DAY_OF_WEEK, 1);
+				if (classDays.get(i) == DayOfWeek.of(realStartDate.get(Calendar.DAY_OF_WEEK))){
+					break;
+				}
+			}
+			realReturningDates.add(realStartDate.getTime());
+		}
+		for (Date d : realReturningDates){
+			System.out.println(d);
+		}
+		return realReturningDates;
+	}
 
 	public void setStartAndEndTimes(){
 		for (int i = 0; i < startDates.size(); i++){
@@ -299,7 +321,7 @@ class ClassInfo {
 			result += String.format("PRODID:-//hacksw/handcal//NONSGML v1.0//EN%s", special_newline);
 			result += String.format("BEGIN:VEVENT%s", special_newline);
 			// body of event
-			result += String.format("UID:uid@example.com%s", special_newline);
+			result += String.format("UID:%s%s", dateOutput.format(startTimes.get(i)) + i + meetingRooms.get(i) + CRN, special_newline);
 			result += String.format("DTSTAMP:%s%s", dateOutput.format(startTimes.get(i)), special_newline);
 			result += String.format("DTSTART:%s%s", dateOutput.format(startTimes.get(i)), special_newline);
 			result += String.format("DTEND:%s%s", dateOutput.format(endTimes.get(i)), special_newline);
