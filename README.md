@@ -17,10 +17,12 @@ Once you get the "success" message, open the .ics file on your computer and it s
 
 Hope you enjoy. Send bug reports and questions to 44244401+TTWNO@users.noreply.github.com
 
+This only works with Apple iCalender. Email the .ics files to an iDevice that syncs with your calender if you use Google or Outlook.
+
 #### Limitations/TODOs:
 * At least an option to use Microsoft Outlook file format. It might work as is, I'm not sure.
 * Make the code cleaner. It's so bad right now. My instructor should NOT see this code :/
 * Add an option to combine all classes into one file, like `winter_2020.ics`.
 * Add ability to save directly to calender instead of having to open the files.
- 
+* Unforuantely, this only currentl works with Apple iCalender. More to come soon. If you know how to implement Google Calender and Microsoft Outlook calender files, please let me know. 
 
