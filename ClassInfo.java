@@ -304,7 +304,7 @@ class ClassInfo {
 			result += String.format("DTSTART:%s%s", dateOutput.format(startTimes.get(i)), special_newline);
 			result += String.format("DTEND:%s%s", dateOutput.format(endTimes.get(i)), special_newline);
 			result += String.format("SUMMARY:%s%s", classDescription + " @ " + meetingBuildings.get(i) + " " + meetingRooms.get(i), special_newline);
-			result += String.format("RRULE:FREQ=WEEKLY;UNTIL=%s%s", dateOutput.format(endTimes.get(endTimes.size()-1)), special_newline);
+			result += String.format("RRULE:FREQ=WEEKLY;UNTIL=%s%s", dateOutput.format(endDate), special_newline);
 			// end of body
 			result += String.format("END:VEVENT%s", special_newline);
 			result += String.format("END:VCALENDAR%s", special_newline);
